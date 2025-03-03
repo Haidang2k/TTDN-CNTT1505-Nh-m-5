@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Menu gốc -->
+        <menuitem id="menu_root_document" name="Quản lý Văn Bản" sequence="0"/>
+
+        <!-- Menu con: Văn bản đến -->
+        <menuitem name="Văn bản đến" 
+            id="menu_document_in" 
+            parent="menu_root_document" 
+            sequence="1"
+            action="action_document_in"
+        />
+
+        <!-- Menu con: Văn bản đi -->
+        <menuitem name="Văn bản đi" 
+            id="menu_document_out" 
+            parent="menu_root_document" 
+            sequence="2"
+            action="action_document_out"
+        />
+
+        <!-- Menu con: Lịch sử xử lý -->
+        <menuitem name="Lịch sử xử lý" 
+            id="menu_document_workflow" 
+            parent="menu_root_document" 
+            sequence="3"
+            action="action_document_workflow"
+        />
+
+        <!-- Menu con: Nhân sự -->
+        <menuitem name="Nhân sự" 
+            id="menu_nhan_su" 
+            parent="menu_root_document" 
+            sequence="4"
+            action="action_nhan_su"
+        />    
+    </data>
+</odoo>
