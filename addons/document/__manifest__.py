@@ -18,12 +18,28 @@
     'version': '0.1',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'mail'],
+    'depends': ['base', 'mail', 'nhan_su'],
 
     # always loaded
     'data': [
         # security
         'security/ir.model.access.csv',
+
+        # seed data
+        'data/document_agency_level_data.xml',
+        'data/document_external_agency_data.xml',
+        'data/document_field_data.xml',
+        'data/document_internal_department_data.xml',
+        'data/document_job_position_data.xml',
+        'data/document_priority_level_data.xml',
+        'data/document_security_level_data.xml',
+        'data/document_public_holiday_data.xml',
+        'data/document_register_data.xml',
+        'data/document_type_data.xml',
+        'data/document_year.xml',
+        # seq
+        'data/seq/document_seq.xml',
+
         # view
         'views/document_category.xml',
         'views/document_incoming.xml',
@@ -44,13 +60,6 @@
         'views/document_type.xml',
         'views/document_year.xml',
         
-        'security/ir.model.access.csv',
-        'views/nhan_vien.xml',
-        'views/phong_ban.xml',
-        'views/chuc_vu.xml',
-        'views/chung_chi.xml',
-        'views/lich_su_cong_tac.xml',
-
         'views/menu.xml',
 
     ],
