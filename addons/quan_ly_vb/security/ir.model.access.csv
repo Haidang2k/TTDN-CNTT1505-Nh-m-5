@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_document_in,document_in.document_in,model_document_in,base.group_user,1,1,1,1
-access_document_out,document_out.document_out,model_document_out,base.group_user,1,1,1,1
-access_document_workflow,document_workflow.document_workflow,model_document_workflow,base.group_user,1,1,1,1
-access_nhan_su,nhan_su.nhan_su,model_nhan_su,base.group_user,1,1,1,1
