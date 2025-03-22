@@ -7,6 +7,7 @@ class DocumentOutgoing(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     name = fields.Char(string='Số, ký hiệu', required=True, tracking=True)
+    out_number = fields.Char(string='Số đi', required=True, tracking=True, default=lambda self: self._get_next_out_number(), readonly=1)
     outgoing_number = fields.Integer(string='Số văn bản đi', tracking=True)
     document_number = fields.Char(string='Số văn bản', required=True, tracking=True)
     document_notation = fields.Char(string='Ký hiệu', required=True, tracking=True)
@@ -32,16 +33,17 @@ class DocumentOutgoing(models.Model):
     priority_level = fields.Selection([
         ('normal', 'Bình thường'),
         ('urgent', 'Khẩn'),
-        ('very_urgent', 'Rất khẩn'),
+        ('very_urgent', 'Thượng khẩn'),
+        ('express', 'Hỏa tốc'),
     ], string='Độ khẩn', default='normal')
-    
+
     security_level = fields.Selection([
         ('public', 'Công khai'),
         ('internal', 'Nội bộ'),
         ('confidential', 'Mật'),
-        ('top_secret', 'Tuyệt mật')
+        ('ultra_classified', 'Tuyệt mật'),
+        ('top_secret', 'Tối mật'),
     ], string='Độ mật', default='public')
-
 
     sending_method = fields.Selection([
         ('email', 'Email'),
@@ -67,14 +69,19 @@ class DocumentOutgoing(models.Model):
         ('rejected', 'Từ chối'),
     ], string='Status', default='pending', tracking=True)
 
+    processed_datetime = fields.Datetime(string='Ngày đã xử lý')
+
     @api.depends('signer_id')
     def _compute_signer_position(self):
         for record in self:
             record.signer_position = record.signer_id.chuc_vu_id if record.signer_id else False
 
-    def _get_next_outgoing_number(self):
+    def _get_next_out_number(self):
         last_record = self.search([], order="id desc", limit=1)
-        next_number = (int(last_record.outgoing_number) + 1) if last_record and last_record.outgoing_number.isdigit() else 1
+        if last_record and isinstance(last_record.out_number, str) and last_record.out_number.isdigit():
+            next_number = int(last_record.out_number) + 1
+        else:
+            next_number = 1
         return str(next_number)
     
     @api.onchange('document_type_id', 'issuing_agency_id')
@@ -119,3 +126,40 @@ class DocumentOutgoing(models.Model):
                     raise ValidationError(f"Năm {year} chưa tồn tại trong hệ thống. Vui lòng thêm năm trước khi tiếp tục.")
                 else:
                     record.document_year_id = document_year.id
+
+    def action_open_status_wizard(self):
+        """Mở popup cập nhật trạng thái"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Cập nhật trạng thái',
+            'res_model': 'document_outgoing_status_wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('document.view_document_outgoing_status_wizard_form').id,
+            'target': 'new',
+            'context': {'default_document_id': self.id},
+        }
+    
+    @api.constrains('state', 'processed_datetime')
+    def _check_processed_date(self):
+        for record in self:
+            if record.state == 'processed' and not record.processed_datetime:
+                raise ValidationError("Bạn phải nhập ngày đã xử lý khi trạng thái là 'Đã xử lý'.")
+            
+    def write(self, vals):
+        if 'state' in vals and vals['state'] != self.state:
+            self.env['document_outgoing_history'].create({
+                'document_id': self.id,
+                'state': vals['state'],
+                'note': vals.get('leader_instruction', 'Thay đổi trạng thái'),
+            })
+        return super(DocumentOutgoing, self).write(vals)
+    
+    @api.model
+    def create(self, vals):
+        record = super(DocumentOutgoing, self).create(vals)
+        self.env['document_outgoing_history'].create({
+            'document_id': record.id,
+            'state': record.state,
+            'note': 'Khởi tạo văn bản',
+        })
+        return record

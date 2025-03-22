@@ -47,6 +47,12 @@
         'views/document_register.xml',
         'views/document_type.xml',
         'views/document_year.xml',
+
+        'views/document_incoming_status_wizard_view.xml',
+        'views/document_outgoing_status_wizard_view.xml',
+
+        'views/document_incoming_history.xml',
+        'views/document_outgoing_history.xml',
         
         'views/menu.xml',
 

@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
+from datetime import datetime
 
 class DocumentIncoming(models.Model):
     _name = 'document_incoming'
@@ -27,14 +28,16 @@ class DocumentIncoming(models.Model):
     priority_level = fields.Selection([
         ('normal', 'Bình thường'),
         ('urgent', 'Khẩn'),
-        ('very_urgent', 'Rất khẩn'),
+        ('very_urgent', 'Thượng khẩn'),
+        ('express', 'Hỏa tốc'),
     ], string='Độ khẩn', default='normal')
 
     security_level = fields.Selection([
         ('public', 'Công khai'),
         ('internal', 'Nội bộ'),
         ('confidential', 'Mật'),
-        ('top_secret', 'Tuyệt mật')
+        ('ultra_classified', 'Tuyệt mật'),
+        ('top_secret', 'Tối mật'),
     ], string='Độ mật', default='public')
 
     receiving_method = fields.Selection([
@@ -86,6 +89,8 @@ class DocumentIncoming(models.Model):
         ('processed', 'Đã xử lý'),
         ('rejected', 'Từ chối'),
     ], string='Status', default='pending', tracking=True)
+
+    processed_datetime = fields.Datetime(string='Ngày đã xử lý')
 
     @api.depends('signer_id')
     def _compute_signer_position(self):
@@ -139,3 +144,40 @@ class DocumentIncoming(models.Model):
                     raise ValidationError(f"Năm {year} chưa tồn tại trong hệ thống. Vui lòng thêm năm trước khi tiếp tục.")
                 else:
                     record.document_year_id = document_year.id
+
+    def action_open_status_wizard(self):
+        """Mở popup cập nhật trạng thái"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Cập nhật trạng thái',
+            'res_model': 'document_incoming_status_wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('document.view_document_incoming_status_wizard_form').id,
+            'target': 'new',
+            'context': {'default_document_id': self.id},
+        }
+    
+    @api.constrains('state', 'processed_datetime')
+    def _check_processed_date(self):
+        for record in self:
+            if record.state == 'processed' and not record.processed_datetime:
+                raise ValidationError("Bạn phải nhập ngày đã xử lý khi trạng thái là 'Đã xử lý'.")
+      
+    def write(self, vals):
+        if 'state' in vals and vals['state'] != self.state:
+            self.env['document_incoming_history'].create({
+                'document_id': self.id,
+                'state': vals['state'],
+                'note': vals.get('leader_instruction', 'Thay đổi trạng thái'),
+            })
+        return super(DocumentIncoming, self).write(vals)
+    
+    @api.model
+    def create(self, vals):
+        record = super(DocumentIncoming, self).create(vals)
+        self.env['document_incoming_history'].create({
+            'document_id': record.id,
+            'state': record.state,
+            'note': 'Khởi tạo văn bản',
+        })
+        return record
